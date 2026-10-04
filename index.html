@@ -133,6 +133,214 @@ function openPanel(i) {
 function closePanel() { document.getElementById('overlay').style.display='none'; }
 search.addEventListener('input',render);
 render();
-</script>
+/* ===== ESPACE TRÉSORIER ===== */
+
+const tresorierBtn = document.createElement('button');
+
+tresorierBtn.textContent = '💼 Trésorier';
+
+tresorierBtn.style.cssText =
+
+  'position:fixed;right:18px;bottom:18px;z-index:900;background:#1717d9;color:white;border:0;border-radius:18px;padding:15px 20px;font-size:18px;font-weight:800;box-shadow:0 4px 12px rgba(0,0,0,.2)';
+
+document.body.appendChild(tresorierBtn);
+
+const tresorierBox = document.createElement('div');
+
+tresorierBox.style.cssText =
+
+  'display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.55);padding:20px;overflow:auto';
+
+tresorierBox.innerHTML = `
+
+<div style="background:white;max-width:760px;margin:20px auto;border-radius:25px;padding:22px">
+
+  <button id="closeTresorier" style="float:right;border:0;border-radius:50%;width:42px;height:42px;font-size:24px">×</button>
+
+  <h2 style="margin:5px 0 20px;color:#1717d9">💼 Espace Trésorier</h2>
+
+  <div id="statsTresorier"></div>
+
+  <input id="searchTresorier" placeholder="🔎 Rechercher un cotisant..."
+
+    style="width:100%;padding:15px;border:2px solid #ddd;border-radius:15px;font-size:17px;margin:15px 0">
+
+  <div id="listeTresorier"></div>
+
+</div>`;
+
+document.body.appendChild(tresorierBox);
+
+const payments = JSON.parse(localStorage.getItem('ascDeggoPayments') || '{}');
+
+function savePayments(){
+
+  localStorage.setItem('ascDeggoPayments', JSON.stringify(payments));
+
+}
+
+function renderTresorier(){
+
+  const recherche = document.getElementById('searchTresorier').value.toLowerCase().trim();
+
+  const filtered = people.filter(p => p.name.toLowerCase().includes(recherche));
+
+  let totalAttendu = people.reduce((s,p)=>s+p.total,0);
+
+  let totalPaye = 0;
+
+  people.forEach((p,i)=>{
+
+    const m = monthly(p.total);
+
+    if(m){
+
+      const mois = payments[i] || {};
+
+      Object.values(mois).forEach(v=>{
+
+        if(v) totalPaye += m;
+
+      });
+
+    } else if(payments[i] && payments[i].global){
+
+      totalPaye += p.total;
+
+    }
+
+  });
+
+  const reste = totalAttendu-totalPaye;
+
+  document.getElementById('statsTresorier').innerHTML = `
+
+    <div style="background:#f5f6fa;border-radius:18px;padding:15px;margin-bottom:10px">
+
+      👥 <b>${people.length}</b> cotisants
+
+    </div>
+
+    <div style="background:#f5f6fa;border-radius:18px;padding:15px;margin-bottom:10px">
+
+      💰 <b>Total attendu :</b> ${money(totalAttendu)}
+
+    </div>
+
+    <div style="background:#f5f6fa;border-radius:18px;padding:15px;margin-bottom:10px">
+
+      ✅ <b>Total payé :</b> ${money(totalPaye)}
+
+    </div>
+
+    <div style="background:#fff0f0;border-radius:18px;padding:15px;margin-bottom:15px">
+
+      ⏳ <b>Reste à payer :</b> ${money(reste)}
+
+    </div>
+
+  `;
+
+  document.getElementById('listeTresorier').innerHTML = filtered.map(p=>{
+
+    const i=people.indexOf(p);
+
+    const m=monthly(p.total);
+
+    if(!m){
+
+      const checked=payments[i]?.global ? 'checked' : '';
+
+      return `
+
+      <div style="border:1px solid #ddd;border-radius:18px;padding:15px;margin:10px 0">
+
+        <b style="font-size:18px">${escapeHtml(p.name)}</b>
+
+        <div style="margin-top:8px">${money(p.total)} — Cotisation spéciale</div>
+
+        <label style="display:block;margin-top:12px">
+
+          <input type="checkbox" ${checked} onchange="toggleGlobalPayment(${i},this.checked)">
+
+          ✅ Réglé
+
+        </label>
+
+      </div>`;
+
+    }
+
+    const mois=['Octobre 2026','Novembre 2026','Décembre 2026','Janvier 2027','Février 2027','Mars 2027','Avril 2027','Mai 2027'];
+
+    return `
+
+    <div style="border:1px solid #ddd;border-radius:18px;padding:15px;margin:10px 0">
+
+      <b style="font-size:18px">${escapeHtml(p.name)}</b>
+
+      <div style="margin:7px 0">${money(p.total)} — ${money(m)}/mois</div>
+
+      ${mois.map((moisNom,j)=>{
+
+        const checked=payments[i]?.[j] ? 'checked' : '';
+
+        return `
+
+        <label style="display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid #eee">
+
+          <span>${moisNom}</span>
+
+          <input type="checkbox" ${checked} onchange="toggleMonthPayment(${i},${j},this.checked)">
+
+        </label>`;
+
+      }).join('')}
+
+    </div>`;
+
+  }).join('');
+
+}
+
+window.toggleMonthPayment=function(i,j,value){
+
+  if(!payments[i]) payments[i]={};
+
+  payments[i][j]=value;
+
+  savePayments();
+
+  renderTresorier();
+
+};
+
+window.toggleGlobalPayment=function(i,value){
+
+  if(!payments[i]) payments[i]={};
+
+  payments[i].global=value;
+
+  savePayments();
+
+  renderTresorier();
+
+};
+
+tresorierBtn.onclick=()=>{
+
+  tresorierBox.style.display='block';
+
+  renderTresorier();
+
+};
+
+document.getElementById('closeTresorier').onclick=()=>{
+
+  tresorierBox.style.display='none';
+
+};
+
+document.getElementById('searchTresorier').oninput=renderTresorier;</script>
 </body>
 </html>
