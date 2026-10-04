@@ -195,27 +195,42 @@ function renderTresorier(){
 
   let totalPaye = 0;
 
-  people.forEach((p,i)=>{
+people.forEach((p,i)=>{
 
-    const m = monthly(p.total);
+  const m = monthly(p.total);
 
-    if(m){
+  if(m){
 
-      const mois = payments[i] || {};
+    const paiements = payments[i] || {};
 
-      Object.values(mois).forEach(v=>{
+    Object.values(paiements).forEach(v=>{
 
-        if(v) totalPaye += m;
+      if(typeof v === 'number'){
 
-      });
+        totalPaye += v;
 
-    } else if(payments[i] && payments[i].global){
+      }
 
-      totalPaye += p.total;
+    });
 
-    }
+  } else if(payments[i] && payments[i].global){
 
-  });
+    totalPaye += p.total;
+
+  }
+
+});
+
+   
+
+  } else if(payments[i] && payments[i].global){
+
+    totalPaye += p.total;
+
+  }
+
+});
+
 
   const reste = totalAttendu-totalPaye;
 
@@ -289,19 +304,50 @@ function renderTresorier(){
 
       ${mois.map((moisNom,j)=>{
 
-        const checked=payments[i]?.[j] ? 'checked' : '';
+  const montantPaye=payments[i]?.[j] || 0;
 
-        return `
+  const montantPrevu=monthly(p.total);
 
-        <label style="display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid #eee">
+  const statut=montantPaye>=montantPrevu ? '🟢 Payé' : montantPaye>0 ? '🟠 Partiel' : '⚪ Non payé';
 
-          <span>${moisNom}</span>
+  return `
 
-          <input type="checkbox" ${checked} onchange="toggleMonthPayment(${i},${j},this.checked)">
+  <div style="padding:10px 0;border-top:1px solid #eee">
 
-        </label>`;
+    <div style="display:flex;justify-content:space-between;align-items:center">
 
-      }).join('')}
+      <span>${moisNom}</span>
+
+      <b>${statut}</b>
+
+    </div>
+
+    <div style="font-size:14px;margin:5px 0">
+
+      Prévu : ${money(montantPrevu)} — Reçu : ${money(montantPaye)}
+
+    </div>
+
+    <input
+
+      type="number"
+
+      min="0"
+
+      value="${montantPaye || ''}"
+
+      placeholder="Montant reçu en F"
+
+      style="width:100%;padding:10px;border:1px solid #ccc;border-radius:10px;font-size:16px"
+
+      onchange="enregistrerMontantMensuel(${i},${j},this.value)"
+
+    >
+
+  </div>`;
+
+}).join('')}
+
 
     </div>`;
 
@@ -309,11 +355,51 @@ function renderTresorier(){
 
 }
 
-window.toggleMonthPayment=function(i,j,value){
+window.enregistrerMontantMensuel=function(i,j,value){
 
   if(!payments[i]) payments[i]={};
 
-  payments[i][j]=value;
+  const montant = Number(value) || 0;
+
+  payments[i][j] = montant;
+
+  if(montant > 0 && typeof tresorierConnecte !== 'undefined' && tresorierConnecte){
+
+    historiquePaiements.push({
+
+      tresorier: tresorierConnecte,
+
+      cotisant: people[i].name,
+
+      mois: [
+
+        'Octobre 2026',
+
+        'Novembre 2026',
+
+        'Décembre 2026',
+
+        'Janvier 2027',
+
+        'Février 2027',
+
+        'Mars 2027',
+
+        'Avril 2027',
+
+        'Mai 2027'
+
+      ][j],
+
+      montant: montant,
+
+      date: new Date().toLocaleString('fr-FR')
+
+    });
+
+    sauvegarderHistorique();
+
+  }
 
   savePayments();
 
