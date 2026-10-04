@@ -341,6 +341,144 @@ document.getElementById('closeTresorier').onclick=()=>{
 
 };
 
-document.getElementById('searchTresorier').oninput=renderTresorier;</script>
+document.getElementById('searchTresorier').oninput=renderTresorier;/* ===== ACCÈS SÉCURISÉ DES TRÉSORIERS ===== */
+
+const tresoriers = {
+
+  "1997": "Mayacine Lo",
+
+  "1998": "Abdou Gaye"
+
+};
+
+let tresorierConnecte = null;
+
+const historiquePaiements =
+
+  JSON.parse(localStorage.getItem('ascDeggoHistorique') || '[]');
+
+function sauvegarderHistorique(){
+
+  localStorage.setItem(
+
+    'ascDeggoHistorique',
+
+    JSON.stringify(historiquePaiements)
+
+  );
+
+}
+
+function connexionTresorier(){
+
+  const code = prompt("🔐 Code trésorier :");
+
+  if(tresoriers[code]){
+
+    tresorierConnecte = tresoriers[code];
+
+    tresorierBox.style.display = 'block';
+
+    renderTresorier();
+
+    alert("Bienvenue " + tresorierConnecte + " 👋🏾");
+
+  }else{
+
+    alert("❌ Code incorrect");
+
+  }
+
+}
+
+/* Remplace l'ouverture directe par la connexion */
+
+tresorierBtn.onclick = connexionTresorier;
+
+/* Enregistrement des paiements mensuels */
+
+window.toggleMonthPayment = function(i,j,value){
+
+  if(!payments[i]) payments[i]={};
+
+  payments[i][j]=value;
+
+  if(value && tresorierConnecte){
+
+    historiquePaiements.push({
+
+      tresorier: tresorierConnecte,
+
+      cotisant: people[i].name,
+
+      mois: [
+
+        'Octobre 2026',
+
+        'Novembre 2026',
+
+        'Décembre 2026',
+
+        'Janvier 2027',
+
+        'Février 2027',
+
+        'Mars 2027',
+
+        'Avril 2027',
+
+        'Mai 2027'
+
+      ][j],
+
+      montant: monthly(people[i].total),
+
+      date: new Date().toLocaleString('fr-FR')
+
+    });
+
+    sauvegarderHistorique();
+
+  }
+
+  savePayments();
+
+  renderTresorier();
+
+};
+
+/* Enregistrement des cotisations spéciales */
+
+window.toggleGlobalPayment = function(i,value){
+
+  if(!payments[i]) payments[i]={};
+
+  payments[i].global=value;
+
+  if(value && tresorierConnecte){
+
+    historiquePaiements.push({
+
+      tresorier: tresorierConnecte,
+
+      cotisant: people[i].name,
+
+      mois: 'Cotisation spéciale',
+
+      montant: people[i].total,
+
+      date: new Date().toLocaleString('fr-FR')
+
+    });
+
+    sauvegarderHistorique();
+
+  }
+
+  savePayments();
+
+  renderTresorier();
+
+};</script>
 </body>
 </html>
