@@ -123,8 +123,14 @@ function openPanel(i) {
     document.getElementById('pinfo').innerHTML =
       `<div class="info"><b>Catégorie :</b> ${category(p.total)}<br><b>Mensualité :</b> ${money(m)}<br><b>Période :</b> Octobre 2026 → Mai 2027<br><b>Échéance :</b> 15 mai 2027</div>`;
     const months=['Octobre 2026','Novembre 2026','Décembre 2026','Janvier 2027','Février 2027','Mars 2027','Avril 2027','Mai 2027'];
-    document.getElementById('months').innerHTML=months.map(x=>`<div class="month"><span>${x}</span><span>${money(m)}</span></div>`).join('');
-  } else {
+
+document.getElementById('months').innerHTML=months.map((moisNom,j)=>{
+
+  const paid=payments[people.indexOf(p)]?.[j];
+
+  return `<span style="display:block;padding:10px;margin:6px 0;border-radius:10px;background:${paid?'#d1fae5':'#f5f6fa'};color:${paid?'#15803d':'#151923'};font-weight:700">${moisNom} ${paid?'✓ Payé':'— Non payé'}</span>`;
+
+}).join('');  } else {
     document.getElementById('pinfo').innerHTML='<div class="info"><b>Catégorie :</b> Cotisation spéciale<br><b>Règlement :</b> 100 000 F au total<br><b>Mensualité :</b> aucune — règlement global.</div>';
     document.getElementById('months').innerHTML='';
   }
